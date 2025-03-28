@@ -3,6 +3,7 @@ import { ref, onMounted } from 'vue'
 import axios from 'axios'
 
 const tasks = ref<any[]>([])
+const filteredTasks = ref<any[]>([])
 const newTask = ref({ title: '', description: '' })
 
 const API_URL = 'http://127.0.0.1:5136/api/task' // Update with your backend URL
@@ -20,8 +21,9 @@ const fetchTasks = async () => {
   axios.get(API_URL).then(res => {
     console.log(res.data)
     tasks.value = res.data
+    filteredTasks.value = res.data
   }).catch(err => {
-    tasks.value = []
+    tasks.value = filteredTasks.value = []
   })
 }
 
@@ -35,6 +37,12 @@ const removeTask = async (id: string) => {
   await deleteTask(id)
   fetchTasks()
 }
+const handleSearch = async (e) => {
+  const searchValue = e.target.value.toLowerCase()
+  filteredTasks.value = await tasks.value.filter(task => {
+    return task.title.toLowerCase().indexOf(searchValue) >= 0 || task.description.toLowerCase().indexOf(searchValue) >= 0
+  })
+}
 
 onMounted(fetchTasks)
 </script>
@@ -44,7 +52,7 @@ onMounted(fetchTasks)
     <h1 class="display-4 mb-4">Task Management</h1>
 
     <div class="mb-4">
-      <input v-model="searchQuery" type="text" class="form-control" placeholder="Search tasks..." />
+      <input type="text" class="form-control" placeholder="Search tasks..." @input="handleSearch" />
     </div>
 
     <div class="mb-4 d-flex flex-row gap-2">
@@ -54,7 +62,7 @@ onMounted(fetchTasks)
     </div>
 
     <ul class="list-unstyled">
-      <li v-for="task in tasks" :key="task.id" class="border p-3 mb-2 d-flex gap-2 justify-content-between">
+      <li v-for="task in filteredTasks" :key="task.id" class="border p-3 mb-2 d-flex gap-2 justify-content-between">
         <div class="d-flex flex-column">
           <span>{{ task.title }} - {{ task.description }}</span>
           <span>{{ "Created at: "+task.createdAt }}</span>
