@@ -1,3 +1,4 @@
+import './assets/dist/index.css';  // Import CSS for the toasts
 import './assets/main.css'
 import 'bootstrap/dist/css/bootstrap.min.css'
 

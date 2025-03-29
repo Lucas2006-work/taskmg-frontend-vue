@@ -1,13 +1,36 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import axios from 'axios'
+import { toast } from 'vue3-toastify';
+import 'vue3-toastify/dist/index.css';
+
+import ModalDialog from './ModalDialog.vue'
+import { createConfirmDialog } from 'vuejs-confirm-dialog'
+import NewTaskModal from './NewTaskModal.vue';
 
 const tasks = ref<any[]>([])
 const filteredTasks = ref<any[]>([])
-const newTask = ref({ title: '', description: '' })
 const searchQuery = ref('')
+const title = ref('')
+const description = ref('')
+const isModalOpen = ref(false)
 const statusFilter = ref('all') // 'all', 'completed', 'pending'
-const sortDirection = ref<'asc' | 'desc'>('asc')
+const sortDirection = ref<'asc' | 'desc'>('desc')
+
+const openNewTask = () => {
+  isModalOpen.value = true;
+}
+const closeNewTask = () => {
+  isModalOpen.value = false;
+}
+const handleNewTask = (data) => {
+  title.value = data.title
+  description.value = data.description
+  closeNewTask();
+  createTask();
+}
+
+const dialog = createConfirmDialog(ModalDialog)
 
 const API_URL = 'http://127.0.0.1:5136/api/task' // Update with your backend URL
 
@@ -31,14 +54,23 @@ const fetchTasks = async () => {
 }
 
 const createTask = async () => {
-  if(newTask.title == '' || newTask.description == '')
+  if(title.value == '' || description.value == '' || title.value == undefined || description.value == undefined) {
     return
-  await addTask(newTask.value)
-  newTask.value = { title: '', description: '' }
+  }
+  await addTask({'title':title.value, 'description':description.value})
+  toast.success("Added successfully!", {
+        autoClose: 2000,
+      });
+  title.value = ''
+  description.value = ''
   fetchTasks()
 }
 
 const removeTask = async (id: string) => {
+  const { data, isCanceled } = await dialog.reveal()
+
+  if(isCanceled) return
+
   await deleteTask(id)
   fetchTasks()
 }
@@ -77,11 +109,17 @@ onMounted(fetchTasks)
 
 <template>
   <div class="container py-5">
-    <h1 class="display-4 mb-4">Task Management</h1>
+    <div class="d-flex align-items-center justify-content-between mb-4">
+      <h1 class="display-4 mb-0 me-3">Task Management</h1>
+      <button @click="openNewTask" class="btn btn-primary rounded-md px-4 d-flex justify-content-center align-items-center">
+        New
+      </button>
+    </div>
+    <NewTaskModal :isOpen="isModalOpen" @confirm="handleNewTask" @cancel="closeNewTask" />
 
     <!-- Search and Filter Controls -->
     <div class="row mb-3">
-      <div class="col-md-6">
+      <div class="col-md-9">
         <input v-model="searchQuery" type="text" class="form-control" placeholder="Search tasks..." @input="handleSearch" />
       </div>
       <div class="col-md-3">
@@ -91,33 +129,15 @@ onMounted(fetchTasks)
           <option value="pending">Pending</option>
         </select>
       </div>
-      <div class="col-md-3">
-        <button class="btn btn-secondary w-100" @click="toggleSort">
-          Sort by Date ({{ sortDirection === 'asc' ? 'Oldest' : 'Newest' }})
-        </button>
-      </div>
-    </div>
-
-    <!-- Add Task -->
-    <div class="row mb-3">
-      <div class="col-md-4">
-        <input v-model="newTask.title" placeholder="Task title" class="form-control" />
-      </div>
-      <div class="col-md-4">
-        <input v-model="newTask.description" placeholder="Task description" class="form-control" />
-      </div>
-      <div class="col-md-4">
-        <button @click="createTask" class="btn btn-primary w-100">Add Task</button>
-      </div>
     </div>
 
     <!-- Task Grid (Table) -->
     <table class="table table-bordered table-hover">
       <thead class="table-dark">
         <tr>
-          <th>Title</th>
-          <th>Description</th>
-          <th>Created At</th>
+          <th >Title</th>
+          <th >Description</th>
+          <th @click="toggleSort">Created At {{sortDirection == 'asc' ? '↑' : '↓'}}</th>
           <th>Status</th>
           <th>Actions</th>
         </tr>

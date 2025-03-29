@@ -1,12 +1,19 @@
 <script setup lang="ts">
 import TaskList from './views/TaskList.vue'
+import { DialogsWrapper } from 'vuejs-confirm-dialog'
 </script>
 
 <template>
-  <TaskList />
+  <div class="root">
+    <TaskList />
+  </div>
+  <DialogsWrapper />
 </template>
 
 <style scoped>
+root {
+  display: block !important;
+}
 header {
   line-height: 1.5;
   max-height: 100vh;
